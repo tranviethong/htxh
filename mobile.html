@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Lấy số từ xa - QMS</title>
+<link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+  <div class="mobile-wrap">
+    <div class="mobile-card card">
+      <h2 id="centerName" style="font-size:1.05rem; margin-bottom:16px;">TRUNG TÂM PHỤC VỤ HÀNH CHÍNH CÔNG XÃ ĐAN HẢI</h2>
+
+      <div id="formView">
+        <div class="field">
+          <label>Họ và tên</label>
+          <input id="name" placeholder="Nguyễn Văn A" />
+        </div>
+        <div class="field">
+          <label>Số điện thoại</label>
+          <input id="phone" placeholder="0912345678" maxlength="10" inputmode="numeric" />
+        </div>
+        <div class="field">
+          <label>Chọn lĩnh vực</label>
+          <select id="counterId"></select>
+        </div>
+        <button class="btn btn-primary btn-block" id="btnSubmit">Lấy số</button>
+        <div class="small-note" id="msg"></div>
+      </div>
+
+      <div id="resultView" class="mobile-result" style="display:none;">
+        <div class="small-note">Số thứ tự của bạn</div>
+        <div class="number numeric" id="resultNumber"></div>
+        <div id="resultCounter" style="font-weight:700;"></div>
+        <div class="small-note" id="resultQueue" style="margin-top:8px;"></div>
+        <button class="btn btn-ghost btn-block" style="margin-top:18px;" id="btnAgain">Lấy số khác</button>
+      </div>
+    </div>
+  </div>
+
+<script type="module">
+import { db, collection, doc, getDocs, addDoc, runTransaction, query, where, orderBy, serverTimestamp } from "./js/common.js";
+import { CENTER_NAME } from "./js/firebase-config.js";
+import { todayStr as today, toast } from "./js/common.js";
+
+document.getElementById("centerName").textContent = CENTER_NAME;
+
+const RATE_LIMIT_MS = 5 * 60 * 1000; // 5 phút
+
+const sel = document.getElementById("counterId");
+let countersMap = {};
+
+async function loadCounters() {
+  const snap = await getDocs(query(collection(db, "counters"), orderBy("id")));
+  sel.innerHTML = "";
+  snap.forEach((d) => {
+    const c = d.data();
+    if (c.active === false) return;
+    countersMap[c.id] = c;
+    const opt = document.createElement("option");
+    opt.value = c.id;
+    opt.textContent = `${c.name} - ${c.field}`;
+    sel.appendChild(opt);
+  });
+}
+loadCounters();
+
+function validPhone(p) {
+  return /^0\d{9}$/.test(p);
+}
+
+function checkRateLimit() {
+  const last = Number(localStorage.getItem("htxh_last_ticket_time") || 0);
+  const remain = RATE_LIMIT_MS - (Date.now() - last);
+  return remain > 0 ? remain : 0;
+}
+
+document.getElementById("btnSubmit").addEventListener("click", async () => {
+  const msg = document.getElementById("msg");
+  msg.textContent = "";
+  const name = document.getElementById("name").value.trim();
+  const phone = document.getElementById("phone").value.trim();
+  const counterId = sel.value;
+
+  if (!name) { msg.textContent = "Vui lòng nhập họ tên."; return; }
+  if (!validPhone(phone)) { msg.textContent = "Số điện thoại phải gồm 10 số và bắt đầu bằng số 0."; return; }
+  if (!counterId) { msg.textContent = "Vui lòng chọn lĩnh vực."; return; }
+
+  const remain = checkRateLimit();
+  if (remain > 0) {
+    const mins = Math.ceil(remain / 60000);
+    msg.textContent = `Bạn vừa lấy số. Vui lòng thử lại sau khoảng ${mins} phút.`;
+    return;
+  }
+
+  const btn = document.getElementById("btnSubmit");
+  btn.disabled = true;
+  try {
+    const counterRef = doc(db, "counters", counterId);
+    let ticketNumber, counterData;
+    await runTransaction(db, async (tx) => {
+      const snap = await tx.get(counterRef);
+      if (!snap.exists()) throw new Error("Không tìm thấy quầy");
+      counterData = snap.data();
+      ticketNumber = counterData.currentNumber;
+      tx.update(counterRef, { currentNumber: ticketNumber + 1 });
+    });
+
+    await addDoc(collection(db, "tickets"), {
+      number: ticketNumber,
+      counterId,
+      counterName: counterData.name,
+      field: counterData.field,
+      status: "waiting",
+      source: "mobile",
+      name,
+      phone,
+      date: today(),
+      createdAt: serverTimestamp(),
+      calledAt: null,
+    });
+
+    localStorage.setItem("htxh_last_ticket_time", String(Date.now()));
+
+    // Đếm số người đang chờ trước bạn tại quầy này
+    const waitingSnap = await getDocs(query(
+      collection(db, "tickets"),
+      where("counterId", "==", counterId),
+      where("status", "==", "waiting"),
+      where("date", "==", today())
+    ));
+    const ahead = Math.max(waitingSnap.size - 1, 0);
+
+    document.getElementById("resultNumber").textContent = ticketNumber;
+    document.getElementById("resultCounter").textContent = counterData.name + " - " + counterData.field;
+    document.getElementById("resultQueue").textContent = ahead > 0
+      ? `Hiện có ${ahead} số đang chờ trước bạn.`
+      : `Bạn có thể là người tiếp theo được gọi.`;
+    document.getElementById("formView").style.display = "none";
+    document.getElementById("resultView").style.display = "block";
+  } catch (e) {
+    msg.textContent = "Lỗi: " + e.message;
+  } finally {
+    btn.disabled = false;
+  }
+});
+
+document.getElementById("btnAgain").addEventListener("click", () => {
+  document.getElementById("resultView").style.display = "none";
+  document.getElementById("formView").style.display = "block";
+  document.getElementById("name").value = "";
+  document.getElementById("phone").value = "";
+});
+</script>
+</body>
+</html>

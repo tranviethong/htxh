@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Màn hình hiển thị số - QMS</title>
+<link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+  <div class="hienthi-wrap">
+    <div class="hienthi-header">
+      <h1 id="centerName">TRUNG TÂM PHỤC VỤ HÀNH CHÍNH CÔNG XÃ ĐAN HẢI</h1>
+    </div>
+    <div class="hienthi-grid" id="grid">
+      <!-- các ô quầy được render bằng JS -->
+    </div>
+    <div class="hienthi-marquee">
+      <span id="marqueeText">Thời gian làm việc: Sáng từ 7h30 đến 11h30, Chiều từ 13h30 đến 17h30.</span>
+    </div>
+  </div>
+
+<script type="module">
+import { db, collection, onSnapshot, orderBy, query } from "./js/common.js";
+import { CENTER_NAME, WORKING_HOURS } from "./js/firebase-config.js";
+import { speakCall as speak } from "./js/common.js";
+
+document.getElementById("centerName").textContent = CENTER_NAME;
+document.getElementById("marqueeText").textContent = WORKING_HOURS + "    •    " + WORKING_HOURS;
+
+const grid = document.getElementById("grid");
+let boxes = {};
+
+// Vẽ khung 6 quầy, cập nhật realtime theo Firestore
+const qCounters = query(collection(db, "counters"), orderBy("id"));
+onSnapshot(qCounters, (snap) => {
+  snap.docChanges().forEach((change) => {
+    const c = change.doc.data();
+    if (change.type === "added") {
+      const box = document.createElement("div");
+      box.className = "counter-box";
+      box.id = "box-" + c.id;
+      box.innerHTML = `
+        <div class="cb-name">${c.name}</div>
+        <div class="cb-field">${c.field}</div>
+        <div class="cb-number numeric" id="num-${c.id}">${c.calling > 0 ? c.calling : "--"}</div>
+      `;
+      grid.appendChild(box);
+      boxes[c.id] = c.calling;
+    } else if (change.type === "modified") {
+      const numEl = document.getElementById("num-" + c.id);
+      const boxEl = document.getElementById("box-" + c.id);
+      if (numEl) numEl.textContent = c.calling > 0 ? c.calling : "--";
+      if (boxEl && boxes[c.id] !== c.calling) {
+        boxEl.classList.remove("flash");
+        void boxEl.offsetWidth; // reflow để chạy lại animation
+        boxEl.classList.add("flash");
+      }
+      boxes[c.id] = c.calling;
+    }
+  });
+});
+
+// Lắng nghe các sự kiện "gọi số" mới để phát loa (kể cả gọi lại)
+const qCalls = query(collection(db, "callEvents"), orderBy("createdAt", "desc"));
+let firstLoad = true;
+let lastHandled = null;
+onSnapshot(qCalls, (snap) => {
+  if (snap.empty) { firstLoad = false; return; }
+  const top = snap.docs[0];
+  const data = top.data();
+  if (firstLoad) { lastHandled = top.id; firstLoad = false; return; } // bỏ qua khi mới load trang
+  if (top.id !== lastHandled) {
+    lastHandled = top.id;
+    speak(data.number, data.counterName);
+  }
+});
+</script>
+</body>
+</html>

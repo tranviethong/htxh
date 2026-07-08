@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Khởi tạo hệ thống - QMS</title>
+<link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+  <div class="login-wrap">
+    <div class="login-card card">
+      <h2 style="margin-bottom:10px;">🧰 Khởi tạo hệ thống lần đầu</h2>
+      <p class="small-note" style="margin-bottom:16px;">
+        Chỉ chạy <b>một lần duy nhất</b> sau khi triển khai xong Firebase, để tạo sẵn
+        6 quầy và các tài khoản mặc định (admin, quay1..quay6). Nếu chạy lại,
+        dữ liệu quầy/tài khoản hiện có sẽ được ghi đè về mặc định, nhưng dữ liệu
+        số đã lấy trong ngày (tickets) sẽ không bị mất.
+      </p>
+      <button class="btn btn-primary btn-block" id="btnInit">Khởi tạo ngay</button>
+      <div id="log" class="small-note" style="margin-top:14px; white-space:pre-line;"></div>
+      <div style="margin-top:18px; text-align:center;">
+        <a href="index.html" style="color:var(--navy-dark); font-size:.85rem;">&larr; Quay về trang chủ</a>
+      </div>
+    </div>
+  </div>
+
+<script type="module">
+import { db, doc, setDoc } from "./js/common.js";
+import { DEFAULT_COUNTERS, DEFAULT_ACCOUNTS } from "./js/firebase-config.js";
+
+const logEl = document.getElementById("log");
+function log(msg) { logEl.textContent += msg + "\n"; }
+
+document.getElementById("btnInit").addEventListener("click", async () => {
+  logEl.textContent = "";
+  try {
+    for (const c of DEFAULT_COUNTERS) {
+      await setDoc(doc(db, "counters", c.id), {
+        id: c.id,
+        name: c.name,
+        field: c.field,
+        startNumber: c.startNumber,
+        currentNumber: c.startNumber, // số tiếp theo sẽ cấp
+        calling: 0,                   // số đang gọi (0 = chưa gọi số nào)
+        callingTicketId: null,
+        active: true,
+      });
+      log(`✔ Đã tạo ${c.name}`);
+    }
+    for (const a of DEFAULT_ACCOUNTS) {
+      await setDoc(doc(db, "accounts", a.username), a);
+      log(`✔ Đã tạo tài khoản ${a.username}`);
+    }
+    log("\n🎉 Khởi tạo hoàn tất! Bạn có thể vào trang chủ để sử dụng hệ thống.");
+  } catch (e) {
+    log("❌ Lỗi: " + e.message);
+    log("→ Kiểm tra lại js/firebase-config.js và Firestore Rules (xem README).");
+  }
+});
+</script>
+</body>
+</html>

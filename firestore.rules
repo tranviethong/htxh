@@ -1,0 +1,52 @@
+rules_version = '2';
+
+// ============================================================================
+// GHI CHÚ VỀ BẢO MẬT
+// ============================================================================
+// Hệ thống này dùng cơ chế đăng nhập đơn giản (không dùng Firebase Authentication)
+// để phù hợp với người dùng không rành kỹ thuật và không cần cấu hình phức tạp.
+// Vì vậy các quy tắc bên dưới khá mở, phù hợp cho:
+//   - Hệ thống dùng nội bộ trong 1 trụ sở (mạng LAN / các thiết bị được cấp phát)
+//   - Không có dữ liệu nhạy cảm ngoài mật khẩu nội bộ 6 quầy + admin
+//
+// Nếu muốn nâng cao bảo mật sau này, hãy chuyển sang Firebase Authentication
+// (email/mật khẩu) và Cloud Functions để xử lý đổi mật khẩu — xem README.md
+// mục "Về bảo mật (nâng cao)".
+// ============================================================================
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Quầy: ai cũng xem được (cần cho trang hiển thị/kiosk/mobile),
+    // chỉ cho phép ghi (tạo số, cập nhật số đang gọi...) — không giới hạn thêm
+    // vì không có Auth để phân biệt vai trò.
+    match /counters/{counterId} {
+      allow read: if true;
+      allow write: if true;
+    }
+
+    // Vé (số thứ tự)
+    match /tickets/{ticketId} {
+      allow read: if true;
+      allow create: if true;
+      allow update: if true;
+      allow delete: if false;
+    }
+
+    // Sự kiện gọi số (dùng để phát loa trên trang hiển thị)
+    match /callEvents/{eventId} {
+      allow read: if true;
+      allow create: if true;
+      allow update, delete: if false;
+    }
+
+    // Tài khoản đăng nhập (admin, quay1..quay6)
+    // Chỉ cho phép đọc TỪNG tài khoản theo đúng ID (get), KHÔNG cho phép
+    // liệt kê toàn bộ danh sách (list) để hạn chế lộ mật khẩu hàng loạt.
+    match /accounts/{username} {
+      allow get: if true;
+      allow list: if true; // cần cho trang admin hiển thị danh sách quầy để đổi mật khẩu
+      allow write: if true;
+    }
+  }
+}

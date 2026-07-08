@@ -1,0 +1,25 @@
+{
+  "hosting": {
+    "public": ".",
+    "ignore": [
+      "firebase.json",
+      "**/.*",
+      "**/node_modules/**",
+      "README.md",
+      "firestore.rules",
+      "firestore.indexes.json"
+    ],
+    "rewrites": [
+      { "source": "/hienthi", "destination": "/hienthi.html" },
+      { "source": "/kiosk", "destination": "/kiosk.html" },
+      { "source": "/mobile", "destination": "/mobile.html" },
+      { "source": "/quay", "destination": "/quay.html" },
+      { "source": "/admin", "destination": "/admin.html" },
+      { "source": "/setup", "destination": "/setup.html" }
+    ]
+  },
+  "firestore": {
+    "rules": "firestore.rules",
+    "indexes": "firestore.indexes.json"
+  }
+}

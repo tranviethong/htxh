@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Lấy số - Kiosk</title>
+<link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+  <div class="kiosk-wrap">
+    <h2 class="kiosk-title" id="centerName">TRUNG TÂM PHỤC VỤ HÀNH CHÍNH CÔNG XÃ ĐAN HẢI</h2>
+    <div class="kiosk-sub">Xin mời công dân ấn vào quầy để lấy số tự động</div>
+    <div class="kiosk-grid" id="grid"></div>
+  </div>
+
+  <!-- Khu vực in phiếu (58mm), ẩn trên màn hình, chỉ hiện khi in -->
+  <div id="printArea">
+    <div class="ticket-slip">
+      <h3>TRUNG TÂM HÀNH CHÍNH CÔNG<br/>XÃ ĐAN HẢI</h3>
+      <hr/>
+      <div class="row" id="pFieldName"></div>
+      <div class="big numeric" id="pNumber"></div>
+      <div class="row" id="pCounter"></div>
+      <hr/>
+      <div class="row" id="pDate"></div>
+      <div class="row">Phiếu chỉ có giá trị trong ngày</div>
+    </div>
+  </div>
+
+<script type="module">
+import { db, collection, doc, addDoc, runTransaction, getDocs, orderBy, query, serverTimestamp } from "./js/common.js";
+import { CENTER_NAME } from "./js/firebase-config.js";
+import { todayStr as today, nowStr as now, toast } from "./js/common.js";
+
+document.getElementById("centerName").textContent = CENTER_NAME;
+
+const grid = document.getElementById("grid");
+
+async function loadCounters() {
+  const snap = await getDocs(query(collection(db, "counters"), orderBy("id")));
+  grid.innerHTML = "";
+  snap.forEach((d) => {
+    const c = d.data();
+    if (c.active === false) return;
+    const btn = document.createElement("button");
+    btn.className = "kiosk-btn";
+    btn.innerHTML = `
+      <div class="kb-num">Quầy ${c.id}</div>
+      <div class="kb-name">${c.name}</div>
+      <div class="kb-field">${c.field}</div>
+    `;
+    btn.addEventListener("click", () => takeNumber(c.id));
+    grid.appendChild(btn);
+  });
+}
+loadCounters();
+
+let busy = false;
+async function takeNumber(counterId) {
+  if (busy) return;
+  busy = true;
+  try {
+    const counterRef = doc(db, "counters", counterId);
+    let ticketNumber, counterData;
+    await runTransaction(db, async (tx) => {
+      const snap = await tx.get(counterRef);
+      if (!snap.exists()) throw new Error("Không tìm thấy quầy");
+      counterData = snap.data();
+      ticketNumber = counterData.currentNumber;
+      tx.update(counterRef, { currentNumber: ticketNumber + 1 });
+    });
+
+    await addDoc(collection(db, "tickets"), {
+      number: ticketNumber,
+      counterId,
+      counterName: counterData.name,
+      field: counterData.field,
+      status: "waiting",
+      source: "kiosk",
+      name: null,
+      phone: null,
+      date: today(),
+      createdAt: serverTimestamp(),
+      calledAt: null,
+    });
+
+    printTicket(ticketNumber, counterData);
+    toast(`Đã cấp số ${ticketNumber} - ${counterData.name}`);
+  } catch (e) {
+    toast("Lỗi lấy số: " + e.message, true);
+  } finally {
+    busy = false;
+  }
+}
+
+function printTicket(number, counter) {
+  document.getElementById("pFieldName").textContent = counter.field;
+  document.getElementById("pNumber").textContent = number;
+  document.getElementById("pCounter").textContent = "Quầy: " + counter.name;
+  document.getElementById("pDate").textContent = now();
+  window.print();
+}
+</script>
+</body>
+</html>

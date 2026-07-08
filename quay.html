@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Quầy cán bộ - QMS</title>
+<link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+
+<!-- ===== Màn hình đăng nhập ===== -->
+<div id="loginView" class="login-wrap">
+  <div class="login-card card">
+    <div class="brand">
+      <div class="badge">QMS</div>
+      <h1 style="color:var(--navy-dark);">Đăng nhập Quầy cán bộ</h1>
+    </div>
+    <div class="field">
+      <label>Tên đăng nhập</label>
+      <input id="username" placeholder="quay1" />
+    </div>
+    <div class="field">
+      <label>Mật khẩu</label>
+      <input id="password" type="password" placeholder="••••••••" />
+    </div>
+    <button class="btn btn-primary btn-block" id="btnLogin">Đăng nhập</button>
+    <div class="small-note" id="loginMsg" style="color:var(--warn);"></div>
+  </div>
+</div>
+
+<!-- ===== Màn hình làm việc của quầy ===== -->
+<div id="workView" style="display:none;">
+  <div class="topbar">
+    <div class="title" id="counterTitle">Quầy</div>
+    <div class="actions">
+      <span class="who" id="whoami"></span>
+      <button class="btn btn-outline" id="btnLogout">Đăng xuất</button>
+    </div>
+  </div>
+
+  <div class="quay-wrap">
+    <div class="card quay-current">
+      <div class="label">Số đang gọi</div>
+      <div class="number numeric" id="callingNumber">--</div>
+      <div class="quay-info" id="callingInfo"></div>
+      <div class="quay-actions">
+        <button class="btn btn-primary btn-lg" id="btnNext">Gọi tiếp ▶</button>
+        <button class="btn btn-ghost btn-lg" id="btnRecall">🔁 Gọi lại</button>
+      </div>
+      <button class="btn btn-ghost btn-block" style="margin-top:10px;" id="btnDone">✔ Đánh dấu hoàn thành</button>
+    </div>
+
+    <div class="card waiting-list">
+      <h3>Danh sách đang chờ (<span id="waitingCount">0</span>)</h3>
+      <div id="waitingItems"></div>
+    </div>
+  </div>
+</div>
+
+<script type="module">
+import {
+  db, doc, collection, getDoc, getDocs, updateDoc, addDoc, onSnapshot,
+  query, where, orderBy, serverTimestamp
+} from "./js/common.js";
+import { login, getSession, clearSession, todayStr as today, speakCall, toast } from "./js/common.js";
+
+const loginView = document.getElementById("loginView");
+const workView = document.getElementById("workView");
+
+async function tryResumeSession() {
+  const s = getSession();
+  if (s && s.role === "counter") {
+    await enterWork(s);
+  }
+}
+tryResumeSession();
+
+document.getElementById("btnLogin").addEventListener("click", async () => {
+  const username = document.getElementById("username").value.trim();
+  const password = document.getElementById("password").value;
+  const msg = document.getElementById("loginMsg");
+  msg.textContent = "";
+  const res = await login(username, password);
+  if (!res.ok) { msg.textContent = res.message; return; }
+  if (res.account.role !== "counter") { msg.textContent = "Tài khoản này không phải tài khoản quầy."; clearSession(); return; }
+  await enterWork(res.account);
+});
+
+document.getElementById("btnLogout").addEventListener("click", () => {
+  clearSession();
+  window.location.reload();
+});
+
+let counterId, counterData;
+
+async function enterWork(account) {
+  counterId = account.counterId;
+  const snap = await getDoc(doc(db, "counters", counterId));
+  counterData = snap.data();
+
+  document.getElementById("counterTitle").textContent = counterData.name + " — " + counterData.field;
+  document.getElementById("whoami").textContent = "Đăng nhập: " + account.username;
+  loginView.style.display = "none";
+  workView.style.display = "block";
+
+  listenCounter();
+  listenWaiting();
+}
+
+function listenCounter() {
+  onSnapshot(doc(db, "counters", counterId), (snap) => {
+    const c = snap.data();
+    document.getElementById("callingNumber").textContent = c.calling > 0 ? c.calling : "--";
+  });
+}
+
+function listenWaiting() {
+  const qWaiting = query(
+    collection(db, "tickets"),
+    where("counterId", "==", counterId),
+    where("status", "==", "waiting"),
+    where("date", "==", today())
+  );
+  onSnapshot(qWaiting, (snap) => {
+    const items = [];
+    snap.forEach((d) => items.push({ id: d.id, ...d.data() }));
+    items.sort((a, b) => a.number - b.number);
+    document.getElementById("waitingCount").textContent = items.length;
+    const box = document.getElementById("waitingItems");
+    box.innerHTML = items.length
+      ? items.map((t) => `
+        <div class="waiting-item">
+          <div>
+            <b class="numeric">${t.number}</b>
+            ${t.name ? ` — ${t.name} (${t.phone})` : ""}
+          </div>
+          <span class="pill ${t.source === "mobile" ? "pill-mobile" : "pill-kiosk"}">${t.source === "mobile" ? "Từ xa" : "Kiosk"}</span>
+        </div>`).join("")
+      : `<div class="small-note">Không có số nào đang chờ.</div>`;
+  });
+}
+
+document.getElementById("btnNext").addEventListener("click", async () => {
+  const qWaiting = query(
+    collection(db, "tickets"),
+    where("counterId", "==", counterId),
+    where("status", "==", "waiting"),
+    where("date", "==", today())
+  );
+  const snap = await getDocs(qWaiting);
+  if (snap.empty) { toast("Không còn số nào đang chờ.", true); return; }
+
+  let items = [];
+  snap.forEach((d) => items.push({ id: d.id, ...d.data() }));
+  items.sort((a, b) => a.number - b.number);
+  const next = items[0];
+
+  await updateDoc(doc(db, "tickets", next.id), {
+    status: "called",
+    calledAt: serverTimestamp(),
+  });
+  await updateDoc(doc(db, "counters", counterId), {
+    calling: next.number,
+    callingTicketId: next.id,
+  });
+  await addDoc(collection(db, "callEvents"), {
+    number: next.number,
+    counterId,
+    counterName: counterData.name,
+    createdAt: serverTimestamp(),
+  });
+
+  document.getElementById("callingInfo").textContent = next.name ? `${next.name} — ${next.phone}` : "";
+  speakCall(next.number, counterData.name);
+  toast(`Đang gọi số ${next.number}`);
+});
+
+document.getElementById("btnRecall").addEventListener("click", async () => {
+  const snap = await getDoc(doc(db, "counters", counterId));
+  const c = snap.data();
+  if (!c.calling) { toast("Chưa có số nào được gọi.", true); return; }
+  await addDoc(collection(db, "callEvents"), {
+    number: c.calling,
+    counterId,
+    counterName: counterData.name,
+    createdAt: serverTimestamp(),
+  });
+  speakCall(c.calling, counterData.name);
+  toast(`Gọi lại số ${c.calling}`);
+});
+
+document.getElementById("btnDone").addEventListener("click", async () => {
+  const snap = await getDoc(doc(db, "counters", counterId));
+  const c = snap.data();
+  if (!c.callingTicketId) { toast("Chưa có số nào đang xử lý.", true); return; }
+  await updateDoc(doc(db, "tickets", c.callingTicketId), { status: "done" });
+  toast("Đã hoàn thành phục vụ.");
+});
+</script>
+</body>
+</html>
