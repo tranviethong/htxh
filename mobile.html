@@ -33,6 +33,8 @@
         <div class="number numeric" id="resultNumber"></div>
         <div id="resultCounter" style="font-weight:700;"></div>
         <div class="small-note" id="resultQueue" style="margin-top:8px;"></div>
+        <div class="small-note" id="resultDate" style="margin-top:10px;"></div>
+        <div class="small-note" style="font-weight:600;">Phiếu chỉ có giá trị trong ngày</div>
         <button class="btn btn-ghost btn-block" style="margin-top:18px;" id="btnAgain">Lấy số khác</button>
       </div>
     </div>
@@ -41,7 +43,7 @@
 <script type="module">
 import { db, collection, doc, getDocs, addDoc, runTransaction, query, where, orderBy, serverTimestamp } from "./js/common.js";
 import { CENTER_NAME } from "./js/firebase-config.js";
-import { todayStr as today, toast } from "./js/common.js";
+import { todayStr as today, nowStr as now, toast } from "./js/common.js";
 
 document.getElementById("centerName").textContent = CENTER_NAME;
 
@@ -135,7 +137,8 @@ document.getElementById("btnSubmit").addEventListener("click", async () => {
     document.getElementById("resultCounter").textContent = counterData.name + " - " + counterData.field;
     document.getElementById("resultQueue").textContent = ahead > 0
       ? `Hiện có ${ahead} số đang chờ trước bạn.`
-      : `Bạn có thể là người tiếp theo được gọi.`;
+      : "";
+    document.getElementById("resultDate").textContent = now();
     document.getElementById("formView").style.display = "none";
     document.getElementById("resultView").style.display = "block";
   } catch (e) {

@@ -45,7 +45,7 @@ async function loadCounters() {
     const btn = document.createElement("button");
     btn.className = "kiosk-btn";
     btn.innerHTML = `
-      <div class="kb-num">Quầy ${c.id}</div>
+      <div class="kb-num">${c.id}</div>
       <div class="kb-name">${c.name}</div>
       <div class="kb-field">${c.field}</div>
     `;
@@ -96,7 +96,7 @@ async function takeNumber(counterId) {
 function printTicket(number, counter) {
   document.getElementById("pFieldName").textContent = counter.field;
   document.getElementById("pNumber").textContent = number;
-  document.getElementById("pCounter").textContent = "Quầy: " + counter.name;
+  document.getElementById("pCounter").textContent = counter.name;
   document.getElementById("pDate").textContent = now();
   window.print();
 }
