@@ -28,9 +28,11 @@
   </div>
 
 <script type="module">
-import { db, collection, doc, addDoc, runTransaction, getDocs, orderBy, query, serverTimestamp } from "./js/common.js";
+import { db, collection, doc, addDoc, runTransaction, getDocs, orderBy, query, serverTimestamp, ensureDailyReset } from "./js/common.js";
 import { CENTER_NAME } from "./js/firebase-config.js";
 import { todayStr as today, nowStr as now, toast } from "./js/common.js";
+
+ensureDailyReset();
 
 document.getElementById("centerName").textContent = CENTER_NAME;
 

@@ -12,7 +12,8 @@
 <div id="loginView" class="login-wrap">
   <div class="login-card card">
     <div class="brand">
-      <div class="badge">QMS</div>
+      <div class="badge">🏛️</div>
+      <div class="org-name">ỦY BAN NHÂN DÂN XÃ ĐAN HẢI</div>
       <h1 style="color:var(--navy-dark);">Đăng nhập Quản trị</h1>
     </div>
     <div class="field">
@@ -41,8 +42,9 @@
   <div class="admin-wrap">
     <div class="tabs">
       <button class="tab-btn active" data-tab="report">📊 Báo cáo</button>
-      <button class="tab-btn" data-tab="password">🔑 Đổi mật khẩu quầy</button>
+      <button class="tab-btn" data-tab="password">🔑 Đổi mật khẩu</button>
       <button class="tab-btn" data-tab="counters">🧾 Quản lý quầy</button>
+      <button class="tab-btn" data-tab="init">🧰 Khởi tạo hệ thống</button>
     </div>
 
     <!-- Tab Báo cáo -->
@@ -57,7 +59,15 @@
         <div class="stat-row" id="statRow"></div>
 
         <table>
-          <thead><tr><th>Quầy</th><th>Lĩnh vực</th><th>Tổng số đã lấy</th><th>Đã hoàn thành</th><th>Đang chờ</th></tr></thead>
+          <thead>
+            <tr>
+              <th>Quầy</th>
+              <th>Lĩnh vực</th>
+              <th>Tổng số đã lấy</th>
+              <th>Đã hoàn thành</th>
+              <th>Đang chờ</th>
+            </tr>
+          </thead>
           <tbody id="reportBody"></tbody>
         </table>
       </div>
@@ -67,7 +77,7 @@
     <div class="tab-panel" id="tab-password">
       <div class="card" style="max-width:480px;">
         <div class="field">
-          <label>Chọn tài khoản quầy</label>
+          <label>Chọn tài khoản</label>
           <select id="pwUser"></select>
         </div>
         <div class="field">
@@ -83,33 +93,113 @@
     <div class="tab-panel" id="tab-counters">
       <div class="card">
         <h3 style="margin-bottom:10px;">Danh sách quầy</h3>
+        <div class="small-note" style="margin-bottom:12px;">
+          Tại đây có thể sửa tên quầy, tên lĩnh vực, số bắt đầu và đổi mật khẩu tài khoản quầy.
+        </div>
         <div id="counterList"></div>
       </div>
+
+      <!-- Form sửa quầy -->
+      <div class="card" id="editCounterCard" style="margin-top:16px; max-width:560px; display:none;">
+        <h3 style="margin-bottom:10px;">✏️ Sửa thông tin quầy</h3>
+
+        <div class="field">
+          <label>Mã quầy</label>
+          <input id="editId" disabled />
+        </div>
+
+        <div class="field">
+          <label>Tên quầy</label>
+          <input id="editName" placeholder="Ví dụ: Quầy 1" />
+        </div>
+
+        <div class="field">
+          <label>Tên lĩnh vực</label>
+          <input id="editField" placeholder="Ví dụ: Tư pháp - Hộ tịch" />
+        </div>
+
+        <div class="field">
+          <label>Số bắt đầu</label>
+          <input id="editStart" type="number" placeholder="1001" />
+        </div>
+
+        <div class="field">
+          <label>Mật khẩu mới cho tài khoản quầy</label>
+          <input id="editPassword" type="text" placeholder="Bỏ trống nếu không đổi mật khẩu" />
+        </div>
+
+        <div class="small-note" style="margin-bottom:12px;">
+          Lưu ý: sửa số bắt đầu chỉ áp dụng cho lần reset/ngày sau, không tự đổi số đang cấp trong ngày.
+        </div>
+
+        <div style="display:flex; gap:8px; flex-wrap:wrap;">
+          <button class="btn btn-primary" id="btnSaveCounterEdit">Lưu thay đổi</button>
+          <button class="btn btn-ghost" id="btnCancelCounterEdit">Hủy</button>
+        </div>
+      </div>
+
       <div class="card" style="margin-top:16px; max-width:480px;">
         <h3 style="margin-bottom:10px;">Thêm quầy mới</h3>
-        <div class="field"><label>Mã số quầy (duy nhất, ví dụ: 7)</label><input id="newId" /></div>
+        <div class="field"><label>Mã số quầy duy nhất, ví dụ: 7</label><input id="newId" /></div>
         <div class="field"><label>Tên quầy</label><input id="newName" placeholder="Quầy 7" /></div>
         <div class="field"><label>Lĩnh vực</label><input id="newField" placeholder="..." /></div>
         <div class="field"><label>Số bắt đầu</label><input id="newStart" type="number" placeholder="7001" /></div>
         <button class="btn btn-primary" id="btnAddCounter">Thêm quầy</button>
       </div>
     </div>
+
+    <!-- Tab Khởi tạo hệ thống -->
+    <div class="tab-panel" id="tab-init">
+      <div class="card" style="max-width:560px;">
+        <h3 style="margin-bottom:10px;">🧰 Khởi tạo dữ liệu hệ thống</h3>
+        <p class="small-note" style="margin-bottom:16px;">
+          Chỉ dùng <b>một lần duy nhất</b> khi mới triển khai hệ thống, để tạo sẵn 6 quầy
+          và các tài khoản mặc định admin, quay1..quay6. Nếu chạy lại, dữ liệu quầy/tài khoản
+          hiện có sẽ được ghi đè về mặc định, nhưng dữ liệu số đã lấy trong ngày tickets
+          sẽ không bị mất. Chỉ tài khoản quản trị mới thấy và dùng được mục này.
+        </p>
+        <button class="btn btn-danger" id="btnInitSystem">Khởi tạo / Đặt lại dữ liệu mặc định</button>
+        <div id="initLog" class="small-note" style="margin-top:14px; white-space:pre-line;"></div>
+      </div>
+    </div>
   </div>
 </div>
 
 <script type="module">
+import { DEFAULT_COUNTERS, DEFAULT_ACCOUNTS } from "./js/firebase-config.js";
 import {
-  db, doc, collection, getDoc, getDocs, setDoc, updateDoc, deleteDoc,
-  query, where, orderBy
+  db,
+  doc,
+  collection,
+  getDoc,
+  getDocs,
+  setDoc,
+  updateDoc,
+  deleteDoc,
+  query,
+  where,
+  orderBy
 } from "./js/common.js";
-import { login, getSession, clearSession, todayStr as today, toast } from "./js/common.js";
+import {
+  login,
+  getSession,
+  clearSession,
+  todayStr as today,
+  toast,
+  ensureDailyReset,
+  hashPassword
+} from "./js/common.js";
+
+ensureDailyReset();
 
 const loginView = document.getElementById("loginView");
 const adminView = document.getElementById("adminView");
 
+let editingCounterId = null;
+
 async function tryResume() {
   const s = getSession();
-  if (s && s.role === "admin") enterAdmin();
+  if (s && (s.role === "admin" || s.role === "viewer")) enterAdmin(s.role);
 }
 tryResume();
 
@@ -118,10 +208,21 @@ document.getElementById("btnLogin").addEventListener("click", async () => {
   const password = document.getElementById("password").value;
   const msg = document.getElementById("loginMsg");
   msg.textContent = "";
+
   const res = await login(username, password);
-  if (!res.ok) { msg.textContent = res.message; return; }
-  if (res.account.role !== "admin") { msg.textContent = "Tài khoản này không có quyền quản trị."; clearSession(); return; }
-  enterAdmin();
+
+  if (!res.ok) {
+    msg.textContent = res.message;
+    return;
+  }
+
+  if (res.account.role !== "admin" && res.account.role !== "viewer") {
+    msg.textContent = "Tài khoản này không có quyền truy cập trang quản trị.";
+    clearSession();
+    return;
+  }
+
+  enterAdmin(res.account.role);
 });
 
 document.getElementById("btnLogout").addEventListener("click", () => {
@@ -129,14 +230,23 @@ document.getElementById("btnLogout").addEventListener("click", () => {
   window.location.reload();
 });
 
-function enterAdmin() {
+function enterAdmin(role) {
   loginView.style.display = "none";
   adminView.style.display = "block";
   document.getElementById("fromDate").value = today();
   document.getElementById("toDate").value = today();
   loadReport();
-  loadCounterOptions();
-  loadCounterList();
+
+  if (role === "viewer") {
+    // Tài khoản chỉ xem báo cáo: ẩn các tab quản trị khác, khoá luôn ở tab Báo cáo
+    document.querySelectorAll(".tab-btn").forEach((btn) => {
+      if (btn.dataset.tab !== "report") btn.style.display = "none";
+    });
+    document.querySelector('.who').textContent = "Xin chào, quantri (chỉ xem báo cáo)";
+  } else {
+    loadCounterOptions();
+    loadCounterList();
+  }
 }
 
 // ---------- Tabs ----------
@@ -166,16 +276,29 @@ async function loadReport() {
     where("date", ">=", from),
     where("date", "<=", to)
   ));
+
   const tickets = [];
   ticketsSnap.forEach((d) => tickets.push(d.data()));
 
-  let totalAll = 0, doneAll = 0, waitingAll = 0;
+  let doneAll = 0;
+  let waitingAll = 0;
+
   const rows = counters.map((c) => {
     const ts = tickets.filter((t) => t.counterId === c.id);
     const done = ts.filter((t) => t.status === "done").length;
     const waiting = ts.filter((t) => t.status === "waiting").length;
-    totalAll += ts.length; doneAll += done; waitingAll += waiting;
-    return `<tr><td>${c.name}</td><td>${c.field}</td><td>${ts.length}</td><td>${done}</td><td>${waiting}</td></tr>`;
+    doneAll += done;
+    waitingAll += waiting;
+
+    return `
+      <tr>
+        <td>${escapeHtml(c.name || "")}</td>
+        <td>${escapeHtml(c.field || "")}</td>
+        <td>${ts.length}</td>
+        <td>${done}</td>
+        <td>${waiting}</td>
+      </tr>
+    `;
   });
 
   document.getElementById("reportBody").innerHTML = rows.join("");
@@ -183,32 +306,57 @@ async function loadReport() {
     <div class="stat-card"><div class="num">${tickets.length}</div><div class="lbl">Tổng số đã lấy</div></div>
     <div class="stat-card"><div class="num">${doneAll}</div><div class="lbl">Đã hoàn thành</div></div>
     <div class="stat-card"><div class="num">${waitingAll}</div><div class="lbl">Đang chờ</div></div>
-    <div class="stat-card"><div class="num">${tickets.filter(t=>t.source==='mobile').length}</div><div class="lbl">Lấy số từ xa</div></div>
-    <div class="stat-card"><div class="num">${tickets.filter(t=>t.source==='kiosk').length}</div><div class="lbl">Lấy số tại Kiosk</div></div>
+    <div class="stat-card"><div class="num">${tickets.filter(t => t.source === "mobile").length}</div><div class="lbl">Lấy số từ xa</div></div>
+    <div class="stat-card"><div class="num">${tickets.filter(t => t.source === "kiosk").length}</div><div class="lbl">Lấy số tại Kiosk</div></div>
   `;
 }
 
-// ---------- Đổi mật khẩu quầy ----------
+// ---------- Đổi mật khẩu ----------
 async function loadCounterOptions() {
-  const snap = await getDocs(collection(db, "accounts"));
+  const snap = await getDocs(query(collection(db, "counters"), orderBy("id")));
   const sel = document.getElementById("pwUser");
   sel.innerHTML = "";
+
+  const adminOpt = document.createElement("option");
+  adminOpt.value = "admin";
+  adminOpt.textContent = "admin (Quản trị)";
+  sel.appendChild(adminOpt);
+
+  const viewerOpt = document.createElement("option");
+  viewerOpt.value = "quantri";
+  viewerOpt.textContent = "quantri (Chỉ xem báo cáo)";
+  sel.appendChild(viewerOpt);
+
   snap.forEach((d) => {
-    const a = d.data();
-    if (a.role === "counter") {
-      const opt = document.createElement("option");
-      opt.value = a.username;
-      opt.textContent = a.username;
-      sel.appendChild(opt);
-    }
+    const c = d.data();
+    const opt = document.createElement("option");
+    opt.value = "quay" + c.id;
+    opt.textContent = `quay${c.id} ( ${c.name})`;
+    sel.appendChild(opt);
   });
 }
 
 document.getElementById("btnChangePw").addEventListener("click", async () => {
   const username = document.getElementById("pwUser").value;
   const newPw = document.getElementById("pwNew").value.trim();
-  if (!newPw || newPw.length < 6) { toast("Mật khẩu mới cần ít nhất 6 ký tự.", true); return; }
-  await updateDoc(doc(db, "accounts", username), { password: newPw });
+
+  if (!newPw || newPw.length < 6) {
+    toast("Mật khẩu mới cần ít nhất 6 ký tự.", true);
+    return;
+  }
+
+  const passwordHash = await hashPassword(username, newPw);
+  let role = "counter";
+  if (username === "admin") role = "admin";
+  else if (username === "quantri") role = "viewer";
+  const counterId = role === "counter" ? username.replace("quay", "") : null;
+
+  await setDoc(
+    doc(db, "accounts", username),
+    { username, role, counterId, passwordHash },
+    { merge: true }
+  );
+
   document.getElementById("pwNew").value = "";
   toast(`Đã đổi mật khẩu cho ${username}`);
 });
@@ -218,56 +366,214 @@ async function loadCounterList() {
   const snap = await getDocs(query(collection(db, "counters"), orderBy("id")));
   const box = document.getElementById("counterList");
   box.innerHTML = "";
+
   snap.forEach((d) => {
     const c = d.data();
+    const id = c.id || d.id;
+    const activeText = c.active === false ? "Đang tạm ngưng" : "Đang hoạt động";
+    const toggleText = c.active === false ? "Kích hoạt" : "Tạm ngưng";
+
     const row = document.createElement("div");
     row.className = "list-row";
     row.innerHTML = `
       <div>
-        <b>${c.name}</b> — ${c.field}
-        <div class="small-note">Bắt đầu từ số ${c.startNumber} · Số kế tiếp: ${c.currentNumber} · ${c.active === false ? "Đang tạm ngưng" : "Đang hoạt động"}</div>
+        <b>${escapeHtml(c.name || "")}</b> - ${escapeHtml(c.field || "")}
+        <div class="small-note">
+          Mã quầy: ${escapeHtml(id)}
+          · Tài khoản: quay${escapeHtml(id)}
+          · Bắt đầu từ số ${Number(c.startNumber || 0)}
+          · Số kế tiếp: ${Number(c.currentNumber || 0)}
+          · ${activeText}
+        </div>
       </div>
-      <div style="display:flex; gap:8px;">
-        <button class="btn btn-ghost" data-toggle="${c.id}">${c.active === false ? "Kích hoạt" : "Tạm ngưng"}</button>
-        <button class="btn btn-danger" data-delete="${c.id}">Xoá</button>
+      <div style="display:flex; gap:8px; flex-wrap:wrap;">
+        <button class="btn btn-primary" data-edit="${escapeAttr(id)}">Sửa</button>
+        <button class="btn btn-ghost" data-toggle="${escapeAttr(id)}">${toggleText}</button>
+        <button class="btn btn-danger" data-delete="${escapeAttr(id)}">Xóa</button>
       </div>
     `;
+
     box.appendChild(row);
+  });
+
+  box.querySelectorAll("[data-edit]").forEach((btn) => {
+    btn.addEventListener("click", async () => {
+      await openEditCounter(btn.dataset.edit);
+    });
   });
 
   box.querySelectorAll("[data-toggle]").forEach((btn) => {
     btn.addEventListener("click", async () => {
       const id = btn.dataset.toggle;
-      const snap = await getDoc(doc(db, "counters", id));
-      const c = snap.data();
-      await updateDoc(doc(db, "counters", id), { active: c.active === false ? true : false });
+      const counterSnap = await getDoc(doc(db, "counters", id));
+
+      if (!counterSnap.exists()) {
+        toast("Không tìm thấy quầy.", true);
+        return;
+      }
+
+      const c = counterSnap.data();
+
+      await updateDoc(doc(db, "counters", id), {
+        active: c.active === false ? true : false
+      });
+
+      toast(c.active === false ? "Đã kích hoạt quầy." : "Đã tạm ngưng quầy.");
       loadCounterList();
+      loadCounterOptions();
     });
   });
+
   box.querySelectorAll("[data-delete]").forEach((btn) => {
     btn.addEventListener("click", async () => {
       const id = btn.dataset.delete;
-      if (!confirm(`Xoá quầy ${id}? Số liệu lịch sử của quầy này vẫn được giữ lại trong báo cáo.`)) return;
+
+      if (!confirm(`Xóa quầy ${id}? Số liệu lịch sử của quầy này vẫn được giữ lại trong báo cáo.`)) {
+        return;
+      }
+
       await deleteDoc(doc(db, "counters", id));
+
+      toast(`Đã xóa quầy ${id}.`);
+      closeEditCounter();
       loadCounterList();
       loadCounterOptions();
     });
   });
 }
 
+async function openEditCounter(id) {
+  const counterSnap = await getDoc(doc(db, "counters", id));
+
+  if (!counterSnap.exists()) {
+    toast("Không tìm thấy quầy cần sửa.", true);
+    return;
+  }
+
+  const c = counterSnap.data();
+
+  editingCounterId = id;
+  document.getElementById("editCounterCard").style.display = "block";
+  document.getElementById("editId").value = id;
+  document.getElementById("editName").value = c.name || "";
+  document.getElementById("editField").value = c.field || "";
+  document.getElementById("editStart").value = c.startNumber || "";
+  document.getElementById("editPassword").value = "";
+
+  document.getElementById("editCounterCard").scrollIntoView({
+    behavior: "smooth",
+    block: "start"
+  });
+}
+
+function closeEditCounter() {
+  editingCounterId = null;
+  document.getElementById("editCounterCard").style.display = "none";
+  document.getElementById("editId").value = "";
+  document.getElementById("editName").value = "";
+  document.getElementById("editField").value = "";
+  document.getElementById("editStart").value = "";
+  document.getElementById("editPassword").value = "";
+}
+
+document.getElementById("btnCancelCounterEdit").addEventListener("click", () => {
+  closeEditCounter();
+});
+
+document.getElementById("btnSaveCounterEdit").addEventListener("click", async () => {
+  if (!editingCounterId) {
+    toast("Chưa chọn quầy cần sửa.", true);
+    return;
+  }
+
+  const id = editingCounterId;
+  const name = document.getElementById("editName").value.trim();
+  const field = document.getElementById("editField").value.trim();
+  const start = Number(document.getElementById("editStart").value);
+  const newPassword = document.getElementById("editPassword").value.trim();
+
+  if (!name) {
+    toast("Tên quầy không được để trống.", true);
+    return;
+  }
+
+  if (!field) {
+    toast("Tên lĩnh vực không được để trống.", true);
+    return;
+  }
+
+  if (!Number.isInteger(start) || start <= 0) {
+    toast("Số bắt đầu không hợp lệ.", true);
+    return;
+  }
+
+  await updateDoc(doc(db, "counters", id), {
+    name,
+    field,
+    startNumber: start
+  });
+
+  if (newPassword) {
+    if (newPassword.length < 6) {
+      toast("Mật khẩu mới cần ít nhất 6 ký tự. Thông tin quầy đã lưu, mật khẩu chưa đổi.", true);
+      loadCounterList();
+      loadCounterOptions();
+      return;
+    }
+
+    const username = "quay" + id;
+    const passwordHash = await hashPassword(username, newPassword);
+
+    await setDoc(
+      doc(db, "accounts", username),
+      {
+        username,
+        role: "counter",
+        counterId: id,
+        passwordHash
+      },
+      { merge: true }
+    );
+  }
+
+  toast(newPassword ? "Đã sửa quầy và đổi mật khẩu." : "Đã sửa thông tin quầy.");
+  closeEditCounter();
+  loadCounterList();
+  loadCounterOptions();
+});
+
 document.getElementById("btnAddCounter").addEventListener("click", async () => {
   const id = document.getElementById("newId").value.trim();
   const name = document.getElementById("newName").value.trim();
   const field = document.getElementById("newField").value.trim();
   const start = Number(document.getElementById("newStart").value);
-  if (!id || !name || !field || !start) { toast("Vui lòng nhập đầy đủ thông tin.", true); return; }
+
+  if (!id || !name || !field || !start) {
+    toast("Vui lòng nhập đầy đủ thông tin.", true);
+    return;
+  }
+
+  if (!Number.isInteger(start) || start <= 0) {
+    toast("Số bắt đầu không hợp lệ.", true);
+    return;
+  }
 
   const existing = await getDoc(doc(db, "counters", id));
-  if (existing.exists()) { toast("Mã số quầy đã tồn tại.", true); return; }
+
+  if (existing.exists()) {
+    toast("Mã số quầy đã tồn tại.", true);
+    return;
+  }
 
   await setDoc(doc(db, "counters", id), {
-    id, name, field, startNumber: start, currentNumber: start,
-    calling: 0, callingTicketId: null, active: true,
+    id,
+    name,
+    field,
+    startNumber: start,
+    currentNumber: start,
+    calling: 0,
+    callingTicketId: null,
+    active: true
   });
 
   document.getElementById("newId").value = "";
@@ -277,7 +583,72 @@ document.getElementById("btnAddCounter").addEventListener("click", async () => {
 
   toast(`Đã thêm ${name}`);
   loadCounterList();
+  loadCounterOptions();
 });
+
+// ---------- Khởi tạo / đặt lại dữ liệu mặc định ----------
+document.getElementById("btnInitSystem").addEventListener("click", async () => {
+  if (!confirm("Bạn chắc chắn muốn khởi tạo/đặt lại 6 quầy và các tài khoản mặc định? Dữ liệu quầy/tài khoản hiện có sẽ bị ghi đè.")) {
+    return;
+  }
+
+  const logEl = document.getElementById("initLog");
+  logEl.textContent = "";
+  const log = (msg) => (logEl.textContent += msg + "\n");
+
+  try {
+    for (const c of DEFAULT_COUNTERS) {
+      await setDoc(doc(db, "counters", c.id), {
+        id: c.id,
+        name: c.name,
+        field: c.field,
+        startNumber: c.startNumber,
+        currentNumber: c.startNumber,
+        calling: 0,
+        callingTicketId: null,
+        active: true
+      });
+
+      log(`✔ Đã tạo ${c.name}`);
+    }
+
+    for (const a of DEFAULT_ACCOUNTS) {
+      const passwordHash = await hashPassword(a.username, a.password);
+
+      await setDoc(doc(db, "accounts", a.username), {
+        username: a.username,
+        role: a.role,
+        counterId: a.counterId ?? null,
+        passwordHash
+      });
+
+      log(`✔ Đã tạo tài khoản ${a.username}`);
+    }
+
+    log("\n🎉 Khởi tạo hoàn tất!");
+    toast("Đã khởi tạo dữ liệu mặc định thành công.");
+    closeEditCounter();
+    loadCounterList();
+    loadCounterOptions();
+  } catch (e) {
+    log("❌ Lỗi: " + e.message);
+    toast("Lỗi khởi tạo: " + e.message, true);
+  }
+});
+
+// ---------- Hàm phụ chống lỗi ký tự khi hiển thị ----------
+function escapeHtml(value) {
+  return String(value)
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#039;");
+}
+
+function escapeAttr(value) {
+  return escapeHtml(value);
+}
 </script>
 </body>
 </html>

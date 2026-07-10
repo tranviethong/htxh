@@ -10,7 +10,6 @@ mã nguồn lưu trên **GitHub**.
 | Trang | Đường dẫn | Dùng để |
 |---|---|---|
 | Trang chủ | `/` | Menu điều hướng |
-| Khởi tạo hệ thống | `/setup` | Chạy **1 lần** sau khi deploy để tạo 6 quầy + tài khoản mặc định |
 | Trang hiển thị (TV) | `/hienthi` | Màn hình lớn treo ở sảnh, hiện số đang gọi, phát loa |
 | Kiosk lấy số | `/kiosk` | Màn hình cảm ứng đứng, in phiếu qua máy in nhiệt XP-58 |
 | Lấy số từ xa | `/mobile` | Người dân dùng điện thoại/máy tính lấy số trước |
@@ -123,11 +122,18 @@ làm ít nhất 1 lần. Nếu bạn thực sự không thể cài đặt, nhờ
 ## 8. Bước 7 — Khởi tạo dữ liệu lần đầu
 
 Sau khi trang web đã chạy (dù là `https://xxx.web.app` hay `https://htxh.danhai.id.vn`):
-1. Mở `https://htxh.danhai.id.vn/setup`
-2. Bấm **Khởi tạo ngay** → hệ thống tự tạo 6 quầy + 7 tài khoản mặc định trong Firestore.
-3. Xong, vào trang chủ để bắt đầu sử dụng.
+1. Vào `https://htxh.danhai.id.vn/admin`, đăng nhập bằng tài khoản `admin` / `Admin@123`
+2. Vào tab **🧰 Khởi tạo hệ thống** → bấm **"Khởi tạo / Đặt lại dữ liệu mặc định"**
+3. Xong, đăng xuất và bắt đầu sử dụng hệ thống.
 
-⚠️ Chỉ chạy `/setup` **một lần**. Nếu chạy lại, quầy/tài khoản sẽ bị ghi đè về mặc định
+⚠️ **Trường hợp đặc biệt** — nếu bạn đang triển khai lên **một dự án Firebase hoàn toàn mới, chưa từng khởi tạo lần nào** thì bước 1 ở trên sẽ không đăng nhập được (vì chưa có tài khoản `admin` nào trong hệ thống). Khi đó, vào Firebase Console → Firestore Database → tab **Data** → bấm **Start collection**, tạo thủ công 1 tài liệu:
+- Collection ID: `accounts`
+- Document ID: `admin`
+- Các trường: `username` (string) = `admin`, `password` (string) = `Admin@123`, `role` (string) = `admin`
+
+Sau đó đăng nhập `/admin` bình thường rồi vào tab Khởi tạo hệ thống để tạo nốt 6 quầy + các tài khoản quầy còn lại.
+
+⚠️ Chỉ chạy chức năng khởi tạo này **một lần**. Nếu chạy lại, quầy/tài khoản sẽ bị ghi đè về mặc định
 (số phiếu đã lấy trong ngày không bị ảnh hưởng).
 
 ---
@@ -168,7 +174,7 @@ phù hợp với hệ thống nội bộ quy mô nhỏ, dùng trong nội bộ t
 | Hiện tượng | Nguyên nhân thường gặp | Cách xử lý |
 |---|---|---|
 | Trang trắng, lỗi console | Chưa dán đúng `firebaseConfig` | Kiểm tra lại Bước 2 |
-| Đăng nhập báo "Tài khoản không tồn tại" | Chưa chạy `/setup` | Vào `/setup` bấm Khởi tạo |
+| Đăng nhập báo "Tài khoản không tồn tại" | Chưa khởi tạo dữ liệu | Vào `/admin`, tab "Khởi tạo hệ thống" bấm nút khởi tạo |
 | Lỗi "The query requires an index" | Thiếu chỉ mục Firestore | Bấm vào link trong thông báo lỗi để tạo chỉ mục |
 | Không nghe thấy loa gọi số | Trình duyệt/máy tính đang tắt tiếng, hoặc chưa từng tương tác với trang | Bật âm lượng; bấm 1 lần vào trang `/hienthi` trước |
 | Không in được phiếu | Máy in chưa đặt mặc định / chưa cài driver | Kiểm tra Cài đặt máy in trong hệ điều hành |

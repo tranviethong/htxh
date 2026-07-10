@@ -14,8 +14,7 @@
       { "source": "/kiosk", "destination": "/kiosk.html" },
       { "source": "/mobile", "destination": "/mobile.html" },
       { "source": "/quay", "destination": "/quay.html" },
-      { "source": "/admin", "destination": "/admin.html" },
-      { "source": "/setup", "destination": "/setup.html" }
+      { "source": "/admin", "destination": "/admin.html" }
     ]
   },
   "firestore": {

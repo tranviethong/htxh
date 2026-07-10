@@ -20,12 +20,17 @@
   </div>
 
 <script type="module">
-import { db, collection, onSnapshot, orderBy, query } from "./js/common.js";
+import { db, collection, onSnapshot, orderBy, query, ensureDailyReset } from "./js/common.js";
 import { CENTER_NAME, WORKING_HOURS } from "./js/firebase-config.js";
 import { speakCall as speak } from "./js/common.js";
 
 document.getElementById("centerName").textContent = CENTER_NAME;
 document.getElementById("marqueeText").textContent = WORKING_HOURS + "    •    " + WORKING_HOURS;
+
+// Trang này thường mở suốt cả ngày (màn hình TV), nên kiểm tra ngay khi mở
+// và kiểm tra lại mỗi 5 phút để tự đặt lại số khi bước sang ngày mới.
+ensureDailyReset();
+setInterval(ensureDailyReset, 5 * 60 * 1000);
 
 const grid = document.getElementById("grid");
 let boxes = {};
